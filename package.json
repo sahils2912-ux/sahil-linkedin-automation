@@ -1,0 +1,12 @@
+{
+  "name": "sahil-linkedin-automation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "post": "node src/post.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
