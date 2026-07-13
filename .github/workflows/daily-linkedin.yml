@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  models: read
 
 concurrency:
   group: daily-linkedin-post
@@ -34,8 +35,8 @@ jobs:
 
       - name: Generate and queue LinkedIn post
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
-          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-5.6' }}
+          GITHUB_MODEL: ${{ vars.GITHUB_MODEL || 'openai/gpt-4o-mini' }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
         run: npm run post
