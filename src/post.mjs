@@ -1,11 +1,11 @@
-const required = ["OPENAI_API_KEY", "BUFFER_API_KEY"];
+const required = ["GITHUB_TOKEN", "BUFFER_API_KEY"];
 for (const name of required) {
   if (!process.env[name]) throw new Error(`Missing required secret: ${name}`);
 }
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const BUFFER_API_KEY = process.env.BUFFER_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.6";
+const GITHUB_MODEL = process.env.GITHUB_MODEL || "openai/gpt-4o-mini";
 const DRY_RUN = process.env.DRY_RUN === "true";
 
 const pillars = [
@@ -50,26 +50,28 @@ async function jsonRequest(url, options) {
 }
 
 async function generatePost() {
-  const body = await jsonRequest("https://api.openai.com/v1/responses", {
+  const body = await jsonRequest("https://models.github.ai/inference/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${OPENAI_API_KEY}`
+      "Accept": "application/vnd.github+json",
+      "Authorization": `Bearer ${GITHUB_TOKEN}`,
+      "X-GitHub-Api-Version": "2022-11-28"
     },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
-      instructions,
-      input,
-      max_output_tokens: 700,
-      store: false
+      model: GITHUB_MODEL,
+      messages: [
+        { role: "system", content: instructions },
+        { role: "user", content: input }
+      ],
+      temperature: 0.8,
+      max_tokens: 700
     })
   });
 
-  const text = body.output_text || body.output
-    ?.flatMap(item => item.content || [])
-    ?.find(item => item.type === "output_text")?.text;
+  const text = body.choices?.[0]?.message?.content;
 
-  if (!text) throw new Error(`OpenAI returned no text: ${JSON.stringify(body)}`);
+  if (!text) throw new Error(`GitHub Models returned no text: ${JSON.stringify(body)}`);
   const post = text.trim();
   if (post.length < 300 || post.length > 2800) {
     throw new Error(`Generated post length ${post.length} is outside the safe range.`);
