@@ -1,9 +1,7 @@
 name: Daily LinkedIn Post
 
+# Scheduled posting is temporarily paused while mixed-format posts are tested.
 on:
-  schedule:
-    # 09:00 India time. Buffer should publish the queued post at 09:30.
-    - cron: "30 3 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -13,7 +11,7 @@ on:
         type: boolean
 
 permissions:
-  contents: read
+  contents: write
   models: read
 
 concurrency:
@@ -23,7 +21,7 @@ concurrency:
 jobs:
   create-post:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -31,7 +29,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
+
+      - name: Install media dependencies
+        run: npm install --no-audit --no-fund
 
       - name: Generate and queue LinkedIn post
         env:
