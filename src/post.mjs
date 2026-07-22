@@ -65,6 +65,10 @@ Rules:
 - Plain text only. Never use Markdown, asterisks, underscores, backticks, headings or emojis.
 - Never use long dashes.
 - Caption must start with a strong hook, use short paragraphs, end naturally, and include only 2 or 3 hashtags.
+- Build the content around one sharp tension, trade-off, mistake, framework or practical decision from marketing and client servicing.
+- Prefer concrete observations, checklists and decision frameworks over broad advice.
+- Never use generic phrases such as fast-paced market, authenticity builds trust, feedback is gold, adapt to stay relevant, long-term success, consumer is king, key takeaway or game changer.
+- Do not lecture the reader. Write at the level of a senior practitioner speaking to another senior practitioner.
 - Return valid JSON only.`;
 
 function formatPrompt() {
@@ -75,7 +79,7 @@ function formatPrompt() {
   if (format === "image") {
     return `${common}\nCreate a single-image thought-leadership post. Return JSON: {"caption":"500 to 1100 character post","headline":"maximum 9 words","subheadline":"maximum 18 words","takeaway":"maximum 16 words"}`;
   }
-  return `${common}\nCreate a 7-page educational PDF carousel. Page 1 is the hook, pages 2 to 6 explain one connected idea, and page 7 is the takeaway. Return JSON: {"caption":"350 to 800 character post","title":"maximum 8 words","slides":[{"title":"maximum 7 words","body":"maximum 35 words"}],"cta":"maximum 16 words"}. slides must contain exactly 7 items.`;
+  return `${common}\nCreate a 7-page educational PDF carousel with this exact narrative flow: page 1 a bold tension or contrarian hook, page 2 the real problem, page 3 the insight most marketers miss, page 4 a usable framework, page 5 a common mistake, page 6 one practical action, page 7 a punchy conclusion. Every page must add a new idea and the sequence must feel connected. Return JSON: {"caption":"350 to 800 character post","title":"maximum 8 words","slides":[{"title":"maximum 7 words","body":"maximum 35 words"}],"cta":"maximum 16 words"}. slides must contain exactly 7 items.`;
 }
 
 async function jsonRequest(url, options) {
@@ -292,6 +296,15 @@ async function uploadMedia(localPath, repositoryPath) {
   return `https://raw.githubusercontent.com/${REPOSITORY}/${BRANCH}/${encodedPath}`;
 }
 
+async function waitForPublicUrl(url) {
+  for (let attempt = 1; attempt <= 12; attempt += 1) {
+    const response = await fetch(url, { method: "HEAD", cache: "no-store" });
+    if (response.ok) return;
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  }
+  throw new Error(`Public media URL was not ready in time: ${url}`);
+}
+
 async function bufferGraphQL(query) {
   const body = await jsonRequest("https://api.buffer.com", {
     method: "POST",
@@ -361,18 +374,20 @@ if (DRY_RUN) {
   if (format === "image") {
     const imagePath = path.join("media", `${indiaDate}-single-image.png`);
     await renderImage(content, imagePath);
+    const url = await uploadMedia(imagePath, `media/${indiaDate}-single-image.png`);
+    await waitForPublicUrl(url);
     asset = {
       type: "image",
-      url: await uploadMedia(imagePath, `media/${indiaDate}-single-image.png`)
+      url
     };
   } else if (format === "carousel") {
     const pdfPath = path.join("media", `${indiaDate}-carousel.pdf`);
     const coverPath = path.join("media", `${indiaDate}-carousel-cover.png`);
     await renderCarousel(content, pdfPath, coverPath);
-    const [url, thumbnailUrl] = await Promise.all([
-      uploadMedia(pdfPath, `media/${indiaDate}-carousel.pdf`),
-      uploadMedia(coverPath, `media/${indiaDate}-carousel-cover.png`)
-    ]);
+    const url = await uploadMedia(pdfPath, `media/${indiaDate}-carousel.pdf`);
+    const thumbnailUrl = await uploadMedia(coverPath, `media/${indiaDate}-carousel-cover.png`);
+    await waitForPublicUrl(url);
+    await waitForPublicUrl(thumbnailUrl);
     asset = {
       type: "document",
       url,
