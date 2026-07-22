@@ -1,12 +1,16 @@
 {
   "name": "sahil-linkedin-automation",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "post": "node src/post.mjs"
   },
+  "dependencies": {
+    "pdfkit": "^0.17.2",
+    "sharp": "^0.34.4"
+  },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   }
 }
